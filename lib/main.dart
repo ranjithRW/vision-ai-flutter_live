@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:vision_ai_app/controllers/theme_controller.dart';
+import 'package:vision_ai_app/screens/main_screen.dart';
+import 'package:vision_ai_app/styles/app_text_styles.dart';
 
 void main() {
   // Enable edge-to-edge UI
@@ -12,14 +16,30 @@ void main() {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
   ));
+  // Set Background
+  Get.put(ThemeController());
+  // Run App
   runApp(ScreenUtilInit(
-      designSize: const Size(2412, 1080),
+      designSize: const Size(360, 804),
       minTextAdapt: true,
       builder: (_, child) {
-        return const MyApp();
+        return const VisionFlutterApp();
       }));
 }
 
+class VisionFlutterApp extends StatelessWidget {
+  const VisionFlutterApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: MainScreen(),
+    );
+  }
+}
+
+// $ Template Screen
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -70,12 +90,13 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  const Text(
+                  Text(
                     'You have pushed the button this many times:',
+                    style: AppTextStyles.primaryTextStyle70016(),
                   ),
                   Text(
                     '$_counter',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: AppTextStyles.primaryTextStyle70048(),
                   ),
                 ],
               ),
