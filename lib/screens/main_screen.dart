@@ -91,11 +91,7 @@ class MainScreen extends StatelessWidget {
                                   style: AppButtonStyles.mainMenuButtonStyle(
                                       themeController.currentTheme),
                                   onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const RealTimeCameraScreen()));
+                                    Get.to(const RealTimeCameraScreen());
                                   },
                                   child: const Text('Detect Live')),
                             ),

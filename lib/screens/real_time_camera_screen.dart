@@ -31,8 +31,7 @@ class RealTimeCameraScreen extends StatelessWidget {
           return IconButton(
             icon: AppIcons.backIcon(themeController.currentTheme.primaryColor),
             onPressed: () {
-              // Use Get.offAll instead of Navigator
-              Get.offAll(() => const MainScreen());
+              Get.offAll(const MainScreen());
             },
           );
         }),
@@ -66,7 +65,10 @@ class RealTimeCameraScreen extends StatelessWidget {
                 ),
               )
             else
-              const Center(child: CircularProgressIndicator()),
+              Center(
+                  child: CircularProgressIndicator(
+                color: themeController.currentTheme.primaryColor,
+              )),
           ],
         );
       }),

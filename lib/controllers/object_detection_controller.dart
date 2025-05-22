@@ -13,6 +13,8 @@ class ObjectDetectionController extends GetxController {
   final ImagePicker _picker = ImagePicker();
   var isDetecting = false.obs;
 
+  var dummy = "".obs;
+
   get results => null;
 
   @override
