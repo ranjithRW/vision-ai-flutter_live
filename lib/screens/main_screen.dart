@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:vision_ai_app/controllers/theme_controller.dart';
+import 'package:vision_ai_app/screens/real_time_camera_screen.dart';
 import 'package:vision_ai_app/screens/theme_list_screen.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
 import 'package:vision_ai_app/styles/app_text_styles.dart';
@@ -70,9 +71,11 @@ class MainScreen extends StatelessWidget {
                       ),
                       Padding(
                         padding: AppPaddings.medium,
-                        child: Text("Scan live or choose a photo to get started!",
+                        child: Text(
+                            "Scan live or choose a photo to get started!",
                             textAlign: TextAlign.center,
-                            style: AppTextStyles.primaryTextStyle40016().copyWith(
+                            style:
+                                AppTextStyles.primaryTextStyle40016().copyWith(
                               color: themeController.currentTheme.primaryColor,
                             )),
                       ),
@@ -87,7 +90,13 @@ class MainScreen extends StatelessWidget {
                               child: ElevatedButton(
                                   style: AppButtonStyles.mainMenuButtonStyle(
                                       themeController.currentTheme),
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const RealTimeCameraScreen()));
+                                  },
                                   child: const Text('Detect Live')),
                             ),
                             Gap(16.h),

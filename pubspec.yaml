@@ -39,6 +39,8 @@ dependencies:
   shared_preferences: ^2.5.3
   flutter_launcher_icons: ^0.14.3
   gap: ^3.0.1
+  camera: ^0.11.0+2
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
