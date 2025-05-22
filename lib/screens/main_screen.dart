@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:vision_ai_app/controllers/theme_controller.dart';
+import 'package:vision_ai_app/screens/choose_image_screen.dart';
 import 'package:vision_ai_app/screens/real_time_camera_screen.dart';
 import 'package:vision_ai_app/screens/theme_list_screen.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
@@ -101,7 +102,9 @@ class MainScreen extends StatelessWidget {
                               child: ElevatedButton(
                                   style: AppButtonStyles.mainMenuButtonStyle(
                                       themeController.currentTheme),
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    Get.to(const ChooseImageScreen());
+                                  },
                                   child: const Text('Detect from Image')),
                             ),
                           ],

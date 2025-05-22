@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:get/get.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,9 +13,10 @@ class ObjectDetectionController extends GetxController {
   var detectedObjects = <String>[].obs;
   late CameraController cameraController;
   var isCameraInitialized = false.obs;
-  final ImagePicker _picker = ImagePicker();
   var isDetecting = false.obs;
-
+  var selectedImagePath = ''.obs;
+  var imageAspectRatio = (3 / 4).obs; // Default vertical ratio
+  var isLoadingImage = false.obs;
   var dummy = "".obs;
 
   get results => null;
@@ -66,12 +70,52 @@ class ObjectDetectionController extends GetxController {
     });
   }
 
-  Future<void> pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      // Process the image using the interpreter
-      // Update detectedObjects with the results
+  Future<void> pickImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      isLoadingImage.value = true;
+      final XFile? image = await picker.pickImage(source: source);
+
+      if (image != null) {
+        selectedImagePath.value = image.path;
+        await _calculateImageAspectRatio(image.path);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to pick image: $e');
+    } finally {
+      isLoadingImage.value = false;
     }
+  }
+
+  Future<void> _calculateImageAspectRatio(String imagePath) async {
+    try {
+      final XFile imageFile = XFile(imagePath);
+      final Uint8List imageBytes = await imageFile.readAsBytes();
+
+      // Decode image to get dimensions
+      final ui.Codec codec = await ui.instantiateImageCodec(imageBytes);
+      final ui.FrameInfo frameInfo = await codec.getNextFrame();
+      final ui.Image image = frameInfo.image;
+
+      // Calculate aspect ratio (width / height)
+      final double aspectRatio = image.width / image.height;
+      imageAspectRatio.value = aspectRatio;
+
+      // Dispose the image to free memory
+      image.dispose();
+    } catch (e) {
+      // Fallback to default ratio
+      imageAspectRatio.value = 3 / 4;
+    }
+  }
+
+  void clearImage() {
+    selectedImagePath.value = '';
+    imageAspectRatio.value = 3 / 4; // Reset to default
+  }
+
+  Future<void> runObjectDetectionOnSelectedImage() async {
+    // Your logic to run detection using selectedImagePath
   }
 
   void detectObjects(CameraImage image) {
