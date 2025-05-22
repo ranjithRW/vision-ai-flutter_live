@@ -38,6 +38,7 @@ dependencies:
   get: ^4.7.2
   shared_preferences: ^2.5.3
   flutter_launcher_icons: ^0.14.3
+  gap: ^3.0.1
 
 dev_dependencies:
   flutter_test:
@@ -84,6 +85,13 @@ flutter:
     - family: SF-Pro
       fonts:
         - asset: assets/fonts/SF-Pro/SF-Pro.ttf
+    - family: Orbitron
+      fonts:
+        - asset: assets/fonts/Orbitron/Orbitron.ttf
+
+  #Assets implement here
+  assets:
+    - assets/images/objex.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

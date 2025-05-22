@@ -19,6 +19,14 @@ class ThemeListScreen extends StatelessWidget {
           true, // Body behind AppBar for transparency effect
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        title: Obx(() {
+          return Text(
+            "Themes",
+            style: AppTextStyles.primaryTextStyle70020().copyWith(
+              color: themeController.currentTheme.primaryColor,
+            ),
+          );
+        }),
         leading: Obx(() {
           return IconButton(
             icon: AppIcons.backIcon(themeController.currentTheme.primaryColor),

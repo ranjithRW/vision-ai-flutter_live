@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class AppTextStyles {
   static String primaryFontFamily = 'SF-Pro';
   static String secondaryFontFamily = 'Arial';
-  static String tertiaryFontFamily = 'Calibri';
+  static String tertiaryFontFamily = 'Orbitron';
   static TextStyle primaryTextStyle4008() => TextStyle(
         fontFamily: primaryFontFamily,
         fontWeight: FontWeight.w400,
