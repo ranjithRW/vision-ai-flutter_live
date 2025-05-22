@@ -57,6 +57,12 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+
+    //$ For tflite_v2 package
+    aaptOptions {
+        noCompress 'tflite'
+        noCompress 'lite'
+    }
 }
 
 flutter {

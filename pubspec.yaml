@@ -37,39 +37,15 @@ dependencies:
   flutter_screenutil: ^5.9.3
   get: ^4.7.2
   shared_preferences: ^2.5.3
-  flutter_launcher_icons: ^0.14.3
   gap: ^3.0.1
   camera: ^0.11.0+2
   image_picker: ^1.1.2
+  flutter_launcher_icons: ^0.14.3
+  tflite_v2: ^1.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/icons/app_logo.png"
-  min_sdk_android: 16 # android min sdk min:16, default 21
-  web:
-    generate: true
-    image_path: "assets/icons/app_logo.png"
-    background_color: "#ffffff"
-    theme_color: "#ffffff"
-  windows:
-    generate: true
-    image_path: "assets/icons/app_logo.png"
-    icon_size: 48 # min:48, max:256, default: 48
-  macos:
-    generate: true
-    image_path: "assets/icons/app_logo.png"
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^4.0.0
 
 # For information on the generic Dart part of this file, see the
@@ -93,7 +69,12 @@ flutter:
 
   #Assets implement here
   assets:
+    # Images Here
     - assets/images/objex.png
+    # Models with Labels Here
+    #$ SSD MobileNet Model
+    - assets/models/ssd_mobilenet.tflite
+    - assets/labels/ssd_mobilenet.txt
 
   # To add assets to your application, add an assets section, like this:
   # assets:

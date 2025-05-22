@@ -60,7 +60,7 @@ class ChooseImageScreen extends StatelessWidget {
                     children: [
                       Text(
                         "Pick Image From",
-                        style: AppTextStyles.primaryTextStyle70036().copyWith(
+                        style: AppTextStyles.primaryTextStyle70028().copyWith(
                           color: themeController.currentTheme.primaryColor,
                         ),
                       ),

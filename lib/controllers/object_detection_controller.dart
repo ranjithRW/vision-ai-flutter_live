@@ -4,11 +4,9 @@ import 'dart:ui' as ui;
 import 'package:get/get.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
-// import 'package:tflite_flutter/tflite_flutter.dart';
-// import 'package:tflite_flutter_helper/tflite_flutter_helper.dart';
+import 'package:tflite_v2/tflite_v2.dart';
 
 class ObjectDetectionController extends GetxController {
-  // late Interpreter interpreter;
   var isModelLoaded = false.obs;
   var detectedObjects = <String>[].obs;
   late CameraController cameraController;
@@ -25,7 +23,7 @@ class ObjectDetectionController extends GetxController {
   void onInit() {
     super.onInit();
     initializeCamera();
-    // loadModel();
+    loadModel();
   }
 
   @override
@@ -42,11 +40,18 @@ class ObjectDetectionController extends GetxController {
     isCameraInitialized.value = false;
   }
 
-  // TODO: Implement the model loading logic later
-  // Future<void> loadModel() async {
-  //   interpreter = await Interpreter.fromAsset('model.tflite');
-  //   isModelLoaded.value = true;
-  // }
+  Future<void> loadModel() async {
+    await Tflite.loadModel(
+        model: "assets/ssd_mobilenet.tflite",
+        labels: "assets/ssd_mobilenet.txt",
+        numThreads: 1, // defaults to 1
+        isAsset:
+            true, // defaults to true, set to false to load resources outside assets
+        useGpuDelegate:
+            false // defaults to false, set to true to use GPU delegate
+        );
+    isModelLoaded.value = true;
+  }
 
   Future<void> initializeCamera() async {
     final cameras = await availableCameras();
