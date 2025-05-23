@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:vision_ai_app/controllers/object_detection_controller.dart';
+import 'package:vision_ai_app/controllers/object_detection_controller_tflite.dart';
 import 'package:vision_ai_app/controllers/theme_controller.dart';
 import 'package:vision_ai_app/screens/main_screen.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
@@ -20,7 +20,7 @@ class ChooseImageScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final controller = Get.put(ObjectDetectionController());
+    final controller = Get.put(ObjectDetectionControllerTFLite());
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -109,9 +109,7 @@ class ChooseImageScreen extends StatelessWidget {
                                         File(
                                             controller.selectedImagePath.value),
                                         fit: BoxFit.cover,
-                                        // width: double.infinity,
-                                        // height: double.infinity,
-                                      ),
+                                        ),
                                     ),
                                     // Optional: Add a clear button
                                     Positioned(

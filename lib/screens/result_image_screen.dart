@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:vision_ai_app/controllers/object_detection_controller.dart';
+import 'package:vision_ai_app/controllers/object_detection_controller_tflite.dart';
 import 'package:vision_ai_app/controllers/theme_controller.dart';
 import 'package:vision_ai_app/screens/main_screen.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
@@ -17,7 +17,7 @@ class ResultImageScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final controller = Get.find<ObjectDetectionController>();
+    final controller = Get.find<ObjectDetectionControllerTFLite>();
 
     return Scaffold(
       extendBodyBehindAppBar: true,

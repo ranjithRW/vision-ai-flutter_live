@@ -41,6 +41,9 @@ dependencies:
   camera: ^0.11.0+2
   image_picker: ^1.1.2
   flutter_launcher_icons: ^0.14.3
+  logger: ^2.5.0
+  tflite_flutter: ^0.11.0
+  image: ^4.5.4
   tflite_v2: ^1.0.0
 
 dev_dependencies:
@@ -75,6 +78,9 @@ flutter:
     #$ SSD MobileNet Model
     - assets/models/ssd_mobilenet.tflite
     - assets/labels/ssd_mobilenet.txt
+    #$ SSD MobileNet External Model
+    - assets/models/ssd_mobilenet_external.tflite
+    # - assets/labels/ssd_mobilenet.txt
 
   # To add assets to your application, add an assets section, like this:
   # assets:
