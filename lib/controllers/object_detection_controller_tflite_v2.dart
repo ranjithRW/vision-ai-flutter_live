@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'dart:ui';
 import 'package:camera/camera.dart';
 import 'package:get/get.dart';
@@ -7,9 +9,12 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:tflite_v2/tflite_v2.dart';
 import 'package:vision_ai_app/model_classes/recognized_object.dart';
+import 'package:vision_ai_app/screens/result_image_screen.dart';
 
 class ObjectDetectionControllerTFLiteV2 extends GetxController {
   final Logger logger = Logger();
+  final bool isLive;
+  ObjectDetectionControllerTFLiteV2({this.isLive = false});
 
   // Observables
   var isModelLoaded = false.obs;
@@ -39,15 +44,15 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
   final Duration throttleDuration = const Duration(milliseconds: 150);
 
   @override
-  void onInit() {
+  void onInit() async {
     super.onInit();
-    loadModel();
-    initializeCamera();
+    await initializeCamera();
+    await loadModel();
   }
 
   @override
-  void onClose() {
-    stopCamera();
+  void onClose() async {
+    await stopCamera();
     interpreter.close();
     super.onClose();
   }
@@ -73,20 +78,24 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
           enableAudio: false);
       await cameraController.initialize();
       isCameraInitialized.value = true;
-      // Start image stream
-      cameraController.startImageStream((CameraImage image) {
-        if (!isDetecting.value && isModelLoaded.value) {
-          isDetecting.value = true;
-          runModelOnFrame(image).then((_) {
-            isDetecting.value = false;
-          });
-        }
-        // ! This makes the interpreter busy
-        // isDetecting.value = true;
-        // runModelOnFrame(image).then((_) {
-        //   isDetecting.value = false;
-        // });
-      });
+
+      if (isLive) {
+        logger.i('Start Streaming images from camera');
+        // Start image stream
+        cameraController.startImageStream((CameraImage image) {
+          if (!isDetecting.value && isModelLoaded.value) {
+            isDetecting.value = true;
+            runModelOnFrame(image).then((_) {
+              isDetecting.value = false;
+            });
+          }
+          // ! This makes the interpreter busy
+          // isDetecting.value = true;
+          // runModelOnFrame(image).then((_) {
+          //   isDetecting.value = false;
+          // });
+        });
+      }
     } catch (e) {
       logger.e('Camera initialization error: $e');
     }
@@ -132,7 +141,7 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
           );
       logger.i('Inference completed');
       logger.i('Recognitions: $recognitions');
-      detectedObjects.assignAll(mapRecognitions(recognitions));
+      detectedObjects.assignAll(await mapRecognitions(recognitions));
       logger.i('Detected objects: $detectedObjects');
     } catch (e) {
       logger.e('Error during inference: $e');
@@ -141,7 +150,43 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     }
   }
 
-  List<RecognizedObject> mapRecognitions(List<dynamic>? recognitions) {
+  Future<void> runObjectDetectionOnSelectedImage() async {
+    logger.i('Running model on frame');
+    if (!isModelLoaded.value) return;
+
+    final now = DateTime.now();
+    if (lastInference != null &&
+        now.difference(lastInference!) < throttleDuration) {
+      return;
+    }
+    lastInference = now;
+    try {
+      isDetecting.value = true;
+      logger.i('Running model on selected image: ${selectedImagePath.value}');
+      var recognitions = await Tflite.detectObjectOnImage(
+          path: selectedImagePath.value,
+          model: 'SSDMobileNet',
+          imageMean: 127.5, // defaults to 127.5
+          imageStd:
+              127.5, // defaults to 127.5numResultsPerClass: 5, // defaults to 5
+          threshold: 0.1, // defaults to 0.1
+          asynch: true // defaults to true
+          );
+      logger.i('Inference completed');
+      logger.i('Recognitions: $recognitions');
+      detectedObjects.assignAll(await mapRecognitions(recognitions));
+      logger.i('Detected objects: $detectedObjects');
+      Get.to(const ResultImageScreen());
+    } catch (e) {
+      logger.e('Error during inference: $e');
+      Get.snackbar('Error', 'Failed to run object detection: $e');
+    } finally {
+      isDetecting.value = false;
+    }
+  }
+
+  Future<List<RecognizedObject>> mapRecognitions(
+      List<dynamic>? recognitions) async {
     if (recognitions == null) {
       logger.i('No recognitions found');
       return [];
@@ -204,5 +249,13 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     selectedImagePath.value = '';
     imageAspectRatio.value = 3 / 4;
     detectedObjects.value = [];
+  }
+
+  Future<Size> getImageSizeFromFile(String imagePath) async {
+    final bytes = await File(imagePath).readAsBytes();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    return Size(image.width.toDouble(), image.height.toDouble());
   }
 }
