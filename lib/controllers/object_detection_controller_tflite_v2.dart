@@ -3,13 +3,17 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:ui';
 import 'package:camera/camera.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:tflite_v2/tflite_v2.dart';
 import 'package:vision_ai_app/model_classes/recognized_object.dart';
 import 'package:vision_ai_app/screens/result_image_screen.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ObjectDetectionControllerTFLiteV2 extends GetxController {
   final Logger logger = Logger();
@@ -33,12 +37,6 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
 
   static const int inputSize = 300;
   static const double threshold = 0.4;
-
-  // Output buffers
-  late List<List<List<double>>> outputBoxes; // shape: [1, num_boxes, 4]
-  late List<List<double>> outputScores; // shape: [1, num_boxes]
-  late List<List<double>> outputClasses; // shape: [1, num_boxes]
-  late List<double> numDetections; // shape: [1]
 
   DateTime? lastInference;
   final Duration throttleDuration = const Duration(milliseconds: 150);
@@ -185,6 +183,8 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     }
   }
 
+  /// Maps the raw recognitions from TFLite to RecognizedObject instances
+  /// Use this as a filter method in future
   Future<List<RecognizedObject>> mapRecognitions(
       List<dynamic>? recognitions) async {
     if (recognitions == null) {
@@ -257,5 +257,46 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     final frame = await codec.getNextFrame();
     final image = frame.image;
     return Size(image.width.toDouble(), image.height.toDouble());
+  }
+
+  Future<Uint8List?> captureWidgetToImage(GlobalKey key) async {
+    RenderRepaintBoundary? boundary =
+        key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return null;
+
+    final image = await boundary.toImage(pixelRatio: 3.0);
+    final byteData = await image.toByteData(format: ImageByteFormat.png);
+    return byteData?.buffer.asUint8List();
+  }
+
+  Future<void> saveToDownloads(Uint8List imageBytes) async {
+    Directory? downloadsDirectory;
+
+    if (Platform.isAndroid) {
+      // For Android, get the public Downloads directory
+      downloadsDirectory = Directory('/storage/emulated/0/Download');
+    } else if (Platform.isIOS ||
+        Platform.isMacOS ||
+        Platform.isLinux ||
+        Platform.isWindows) {
+      // For other platforms, use the provided Downloads directory
+      downloadsDirectory = await getDownloadsDirectory();
+    }
+    final filePath =
+        '${downloadsDirectory!.path}/detected_image_${DateTime.now().millisecondsSinceEpoch}.png';
+    final file = File(filePath);
+    await file.writeAsBytes(imageBytes);
+    logger.i("Image saved to Downloads: ${file.path}");
+  }
+
+  Future<void> shareImage(Uint8List imageBytes) async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/shared_image.png');
+    await file.writeAsBytes(imageBytes);
+    await SharePlus.instance.share(ShareParams(
+      text: 'Check out this detected image!',
+      subject: 'Object Detection Result',
+      files: [XFile(file.path, mimeType: 'image/png')],
+    ));
   }
 }

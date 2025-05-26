@@ -22,6 +22,8 @@ class ResultImageScreen extends StatelessWidget {
     final themeController = Get.find<ThemeController>();
     final controller = Get.find<ObjectDetectionControllerTFLiteV2>();
 
+    GlobalKey previewContainerKey = GlobalKey();
+
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
@@ -66,78 +68,81 @@ class ResultImageScreen extends StatelessWidget {
                     children: [
                       AspectRatio(
                         aspectRatio: controller.imageAspectRatio.value,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black12,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: themeController.currentTheme.primaryColor
-                                  as Color,
-                              width: 2,
+                        child: RepaintBoundary(
+                          key: previewContainerKey,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black12,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: themeController.currentTheme.primaryColor
+                                    as Color,
+                                width: 2,
+                              ),
                             ),
-                          ),
-                          child: Obx(() {
-                            final path = controller.selectedImagePath.value;
-                            final objects = controller.detectedObjects;
+                            child: Obx(() {
+                              final path = controller.selectedImagePath.value;
+                              final objects = controller.detectedObjects;
 
-                            if (path.isEmpty) {
-                              return Center(
-                                child: Text(
-                                  "No image selected",
-                                  style: AppTextStyles.primaryTextStyle60016()
-                                      .copyWith(
-                                    color: themeController
-                                        .currentTheme.primaryColor,
+                              if (path.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    "No image selected",
+                                    style: AppTextStyles.primaryTextStyle60016()
+                                        .copyWith(
+                                      color: themeController
+                                          .currentTheme.primaryColor,
+                                    ),
                                   ),
-                                ),
-                              );
-                            }
-
-                            return FutureBuilder<Size>(
-                              future: controller.getImageSizeFromFile(path),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Center(
-                                      child: CircularProgressIndicator());
-                                } else if (snapshot.hasError ||
-                                    !snapshot.hasData) {
-                                  return Center(
-                                    child: Text(
-                                      "Failed to load image size",
-                                      style:
-                                          AppTextStyles.primaryTextStyle60016()
-                                              .copyWith(
-                                        color: themeController
-                                            .currentTheme.primaryColor,
-                                      ),
-                                    ),
-                                  );
-                                }
-                                final imageSize = snapshot.data!;
-                                return Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: Image.file(
-                                        File(path),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    CustomPaint(
-                                      painter: BoundingBoxPainter(
-                                        boxes: objects,
-                                        imageSize: imageSize,
-                                        widgetSize: Size
-                                            .zero, // Not used in painter anymore
-                                      ),
-                                    ),
-                                  ],
                                 );
-                              },
-                            );
-                          }),
+                              }
+
+                              return FutureBuilder<Size>(
+                                future: controller.getImageSizeFromFile(path),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  } else if (snapshot.hasError ||
+                                      !snapshot.hasData) {
+                                    return Center(
+                                      child: Text(
+                                        "Failed to load image size",
+                                        style: AppTextStyles
+                                                .primaryTextStyle60016()
+                                            .copyWith(
+                                          color: themeController
+                                              .currentTheme.primaryColor,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  final imageSize = snapshot.data!;
+                                  return Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Image.file(
+                                          File(path),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      CustomPaint(
+                                        painter: BoundingBoxPainter(
+                                          boxes: objects,
+                                          imageSize: imageSize,
+                                          widgetSize: Size
+                                              .zero, // Not used in painter anymore
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            }),
+                          ),
                         ),
                       ),
                       Gap(16.h),
@@ -146,8 +151,12 @@ class ResultImageScreen extends StatelessWidget {
                         child: ElevatedButton(
                             style: AppButtonStyles.mainMenuButtonStyle(
                                 themeController.currentTheme),
-                            onPressed: () {
-                              // Get.offAll(() => const MainScreen());
+                            onPressed: () async {
+                              final bytes = await controller
+                                  .captureWidgetToImage(previewContainerKey);
+                              if (bytes != null) {
+                                await controller.shareImage(bytes);
+                              }
                             },
                             child: CustomWidgets.textWithIconForFullWidth(
                               AppIcons.shareIcon(),
@@ -160,8 +169,12 @@ class ResultImageScreen extends StatelessWidget {
                         child: ElevatedButton(
                             style: AppButtonStyles.mainMenuButtonStyle(
                                 themeController.currentTheme),
-                            onPressed: () {
-                              // Get.offAll(() => const MainScreen());
+                            onPressed: () async {
+                              final bytes = await controller
+                                  .captureWidgetToImage(previewContainerKey);
+                              if (bytes != null) {
+                                await controller.saveToDownloads(bytes);
+                              }
                             },
                             child: CustomWidgets.textWithIconForFullWidth(
                               AppIcons.downloadIcon(),
@@ -175,7 +188,10 @@ class ResultImageScreen extends StatelessWidget {
                             style: AppButtonStyles.mainMenuButtonStyle(
                                 themeController.currentTheme),
                             onPressed: () {
-                              Get.offAll(() => const MainScreen());
+                              // Get.offAll(() => const MainScreen());
+                              controller.selectedImagePath.value = '';
+                              controller.detectedObjects.clear();
+                              Get.back();
                             },
                             child: CustomWidgets.textWithIconForFullWidth(
                               AppIcons.homeIcon(),
