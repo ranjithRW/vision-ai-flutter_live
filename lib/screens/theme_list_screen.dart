@@ -5,6 +5,7 @@ import 'package:vision_ai_app/styles/app_gradients.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
 import 'package:vision_ai_app/styles/app_text_styles.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:vision_ai_app/styles/button_styles.dart';
 import 'package:vision_ai_app/widgets/app_icons.dart';
 
 class ThemeListScreen extends StatelessWidget {
@@ -69,32 +70,49 @@ class ThemeListScreen extends StatelessWidget {
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) {
                                   final theme = AppGradients.themes[index];
-                                  return Padding(
-                                    padding: AppPaddings.only(bottom: 8),
-                                    child: ListTile(
-                                      title: Text(theme.name,
-                                          style: AppTextStyles
-                                                  .primaryTextStyle50018()
-                                              .copyWith(
-                                            color: themeController
-                                                .currentTheme.primaryColor,
-                                          )),
-                                      onTap: () =>
-                                          themeController.changeTheme(index),
-                                      tileColor: Colors.transparent,
-                                      leading: AspectRatio(
-                                        aspectRatio: 1,
-                                        child: Container(
-                                          width: 100.w,
-                                          height: 100.h,
-                                          decoration: BoxDecoration(
-                                            gradient: theme.gradient,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                  return Column(
+                                    children: [
+                                      Padding(
+                                        padding: AppPaddings.vertical(16),
+                                        child: ListTile(
+                                          title: Text(theme.name,
+                                              style: AppTextStyles
+                                                      .primaryTextStyle50018()
+                                                  .copyWith(
+                                                color: themeController
+                                                    .currentTheme.primaryColor,
+                                              )),
+                                          tileColor: Colors.transparent,
+                                          leading: AspectRatio(
+                                            aspectRatio: 1,
+                                            child: Container(
+                                              width: 100.w,
+                                              height: 100.h,
+                                              decoration: BoxDecoration(
+                                                gradient: theme.gradient,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                          ),
+                                          trailing: ElevatedButton(
+                                            onPressed: () => themeController
+                                                .changeTheme(index),
+                                            style: AppButtonStyles
+                                                .themeSetButtonStyle(
+                                                    themeController
+                                                        .currentTheme,
+                                                    theme),
+                                            child: Text(themeController.currentTheme==theme?'In Use':'Set',
+                                                style: AppTextStyles
+                                                    .primaryTextStyle50016()),
                                           ),
                                         ),
                                       ),
-                                    ),
+                                      Divider(
+                                          height: 1.h,
+                                          color: Colors.grey.shade300),
+                                    ],
                                   );
                                 },
                                 childCount: AppGradients.themes.length,

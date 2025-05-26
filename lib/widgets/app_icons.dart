@@ -31,28 +31,40 @@ class AppIcons {
       size: 28.h,
     );
   }
+
   static Widget deleteIcon() {
     return Icon(
       Icons.delete_rounded,
       size: 28.h,
     );
   }
+
   static Widget shareIcon() {
     return Icon(
       Icons.share_rounded,
       size: 28.h,
     );
   }
+
   static Widget downloadIcon() {
     return Icon(
       Icons.download_for_offline_rounded,
       size: 28.h,
     );
   }
+
   static Widget homeIcon() {
     return Icon(
       Icons.home_rounded,
       size: 28.h,
+    );
+  }
+
+  static Widget snackBarIcon(
+      BuildContext context, IconData icon, Color iconColor) {
+    return Icon(
+      icon,
+      color: iconColor,
     );
   }
 }

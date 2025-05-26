@@ -14,4 +14,19 @@ class AppButtonStyles {
       ),
     );
   }
+
+  static ButtonStyle? themeSetButtonStyle(
+      GradientTheme currentTheme, GradientTheme itemTheme) {
+    return ElevatedButton.styleFrom(
+      backgroundColor:
+          currentTheme == itemTheme ? Colors.grey : currentTheme.primaryColor,
+      foregroundColor:
+          currentTheme == itemTheme ? Colors.grey : currentTheme.tertiaryColor,
+      textStyle: AppTextStyles.primaryTextStyle60016()
+          .copyWith(color: currentTheme.tertiaryColor, inherit: true),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    );
+  }
 }

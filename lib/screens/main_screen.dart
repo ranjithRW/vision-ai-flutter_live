@@ -107,6 +107,22 @@ class MainScreen extends StatelessWidget {
                                   },
                                   child: const Text('Detect from Image')),
                             ),
+                            // ! Comment this while production
+                            // Gap(16.h),
+                            // SizedBox(
+                            //   width: double.infinity,
+                            //   child: ElevatedButton(
+                            //       style: AppButtonStyles.mainMenuButtonStyle(
+                            //           themeController.currentTheme),
+                            //       onPressed: () {
+                            //         GeneralSnackbars.showSnackBarAtBottom(
+                            //             context,
+                            //             "Test Title",
+                            //             "Ratata Rendu Parotta too too too too",
+                            //             'success');
+                            //       },
+                            //       child: const Text('Detect from Video')),
+                            // ),
                           ],
                         ),
                       )
