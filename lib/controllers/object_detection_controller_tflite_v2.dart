@@ -36,8 +36,8 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
 
   late CameraController cameraController;
 
-  static const int inputSize = 300;
-  static const double threshold = 0.4;
+  // static const int inputSize = 300;
+  // static const double threshold = 0.4;
 
   DateTime? lastInference;
   final Duration throttleDuration = const Duration(milliseconds: 150);
@@ -129,7 +129,6 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     try {
       logger.i('Starting detection');
       logger.i('Running inference');
-      // logger.i('Input tensor shape: ${inputTensor.length}');
       var recognitions = await Tflite.detectObjectOnFrame(
           bytesList: cameraImage.planes.map((plane) {
             return plane.bytes;
