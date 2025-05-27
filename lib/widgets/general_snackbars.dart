@@ -9,8 +9,7 @@ import 'package:vision_ai_app/widgets/app_icons.dart';
 import 'package:vision_ai_app/widgets/custom_widgets.dart';
 
 class GeneralSnackbars {
-  static void showSnackBarAtTop(
-      BuildContext context, String title, String info, String type) {
+  static void showSnackBarAtTop(String title, String info, String type) {
     IconData icon = Icons.info;
     Color iconColor = Colors.black;
 
@@ -54,7 +53,7 @@ class GeneralSnackbars {
               if (title.isNotEmpty)
                 Row(
                   children: [
-                    AppIcons.snackBarIcon(context, icon, iconColor),
+                    AppIcons.snackBarIcon(icon, iconColor),
                     Gap(8.w),
                     Flexible(
                       child: Text(title,
@@ -65,7 +64,7 @@ class GeneralSnackbars {
               if (info.isNotEmpty)
                 Padding(
                   padding: AppPaddings.only(top: 8),
-                  child: CustomWidgets.buildMessageRichText(context, info),
+                  child: CustomWidgets.buildMessageRichText(info),
                 ),
             ],
           ),
@@ -74,8 +73,7 @@ class GeneralSnackbars {
     );
   }
 
-  static void showSnackBarAtBottom(
-      BuildContext context, String title, String info, String type) {
+  static void showSnackBarAtBottom(String title, String info, String type) {
     IconData icon = Icons.info;
     Color iconColor = Colors.black;
 
@@ -119,7 +117,7 @@ class GeneralSnackbars {
               if (title.isNotEmpty)
                 Row(
                   children: [
-                    AppIcons.snackBarIcon(context, icon, iconColor),
+                    AppIcons.snackBarIcon(icon, iconColor),
                     Gap(8.w),
                     Flexible(
                       child: Text(
@@ -132,7 +130,7 @@ class GeneralSnackbars {
               if (info.isNotEmpty)
                 Padding(
                   padding: AppPaddings.only(top: 8),
-                  child: CustomWidgets.buildMessageRichText(context, info),
+                  child: CustomWidgets.buildMessageRichText(info),
                 ),
             ],
           ),

@@ -14,6 +14,7 @@ import 'package:tflite_v2/tflite_v2.dart';
 import 'package:vision_ai_app/model_classes/recognized_object.dart';
 import 'package:vision_ai_app/screens/result_image_screen.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:vision_ai_app/widgets/general_snackbars.dart';
 
 class ObjectDetectionControllerTFLiteV2 extends GetxController {
   final Logger logger = Logger();
@@ -41,6 +42,8 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
   DateTime? lastInference;
   final Duration throttleDuration = const Duration(milliseconds: 150);
 
+  var isEnabled = true.obs;
+
   @override
   void onInit() async {
     super.onInit();
@@ -65,6 +68,8 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
       isModelLoaded.value = true;
     } catch (e) {
       logger.e('Failed to load model: $e');
+      GeneralSnackbars.showSnackBarAtTop(
+          'Detection Failed', 'Failed to load model: $e', 'error');
     }
   }
 
@@ -96,6 +101,8 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
       }
     } catch (e) {
       logger.e('Camera initialization error: $e');
+      GeneralSnackbars.showSnackBarAtTop(
+          'Sorry for the trouble', '$e', 'error');
     }
   }
 
@@ -143,6 +150,8 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
       logger.i('Detected objects: $detectedObjects');
     } catch (e) {
       logger.e('Error during inference: $e');
+      GeneralSnackbars.showSnackBarAtTop(
+          'Detection Failed', 'Failed to run object detection: $e', 'error');
     } finally {
       isDetecting.value = false;
     }
@@ -150,11 +159,19 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
 
   Future<void> runObjectDetectionOnSelectedImage() async {
     logger.i('Running model on frame');
-    if (!isModelLoaded.value) return;
+    isEnabled.value = false;
+    if (!isModelLoaded.value) {
+      logger.e('Model not loaded');
+      GeneralSnackbars.showSnackBarAtTop(
+          'Detection Failed', "Failed to load model", 'error');
+      isEnabled.value = true;
+      return;
+    }
 
     final now = DateTime.now();
     if (lastInference != null &&
         now.difference(lastInference!) < throttleDuration) {
+      isEnabled.value = true;
       return;
     }
     lastInference = now;
@@ -174,12 +191,23 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
       logger.i('Recognitions: $recognitions');
       detectedObjects.assignAll(await mapRecognitions(recognitions));
       logger.i('Detected objects: $detectedObjects');
-      Get.to(const ResultImageScreen());
+      if (detectedObjects.isEmpty) {
+        GeneralSnackbars.showSnackBarAtTop('No Objects Detected',
+            'No objects were detected in the image', 'info');
+        isEnabled.value = true;
+        return;
+      } else {
+        isEnabled.value = true;
+        await Get.to(ResultImageScreen());
+      }
     } catch (e) {
       logger.e('Error during inference: $e');
-      Get.snackbar('Error', 'Failed to run object detection: $e');
+      GeneralSnackbars.showSnackBarAtTop(
+          'Detection Failed', 'Failed to run object detection: $e', 'error');
+      isEnabled.value = true;
     } finally {
       isDetecting.value = false;
+      isEnabled.value = true;
     }
   }
 
@@ -222,7 +250,9 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
         await _calculateImageAspectRatio(image.path);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to pick image: $e');
+      GeneralSnackbars.showSnackBarAtBottom(
+          '', 'Failed to pick image: $e', 'error');
+      logger.e('Failed to pick image: $e');
     } finally {
       isLoadingImage.value = false;
     }
@@ -287,6 +317,8 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     final file = File(filePath);
     await file.writeAsBytes(imageBytes);
     logger.i("Image saved to Downloads: ${file.path}");
+    GeneralSnackbars.showSnackBarAtBottom(
+        'Image Saved', 'Image saved to Downloads', 'success');
   }
 
   Future<void> shareImage(Uint8List imageBytes) async {

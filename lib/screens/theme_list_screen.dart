@@ -103,15 +103,18 @@ class ThemeListScreen extends StatelessWidget {
                                                     themeController
                                                         .currentTheme,
                                                     theme),
-                                            child: Text(themeController.currentTheme==theme?'In Use':'Set',
-                                                style: AppTextStyles
-                                                    .primaryTextStyle50016()),
+                                            child: Text(
+                                              themeController.currentTheme ==
+                                                      theme
+                                                  ? 'In Use'
+                                                  : 'Set',
+                                            ),
                                           ),
                                         ),
                                       ),
                                       Divider(
                                           height: 1.h,
-                                          color: Colors.grey.shade300),
+                                          color: Colors.grey.shade300.withOpacity(0.05)),
                                     ],
                                   );
                                 },

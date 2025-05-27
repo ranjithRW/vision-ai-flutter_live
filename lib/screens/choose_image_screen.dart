@@ -25,6 +25,9 @@ class ChooseImageScreen extends StatelessWidget {
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
+          if (!controller.isEnabled.value) {
+            return;
+          }
           Get.offAll(const MainScreen());
         }
       },
@@ -45,6 +48,7 @@ class ChooseImageScreen extends StatelessWidget {
               icon:
                   AppIcons.backIcon(themeController.currentTheme.primaryColor),
               onPressed: () {
+                if (!controller.isEnabled.value) return;
                 Get.offAll(() => const MainScreen());
               },
             );
@@ -76,9 +80,11 @@ class ChooseImageScreen extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                               style: AppButtonStyles.mainMenuButtonStyle(
-                                  themeController.currentTheme),
-                              onPressed: () =>
-                                  controller.pickImage(ImageSource.camera),
+                                  themeController.currentTheme,
+                                  isEnabled: controller.isEnabled.value),
+                              onPressed: () => controller.isEnabled.value
+                                  ? controller.pickImage(ImageSource.camera)
+                                  : null,
                               child: CustomWidgets.textWithIconForFullWidth(
                                   AppIcons.cameraIcon(), "Camera")),
                         ),
@@ -87,9 +93,11 @@ class ChooseImageScreen extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             style: AppButtonStyles.mainMenuButtonStyle(
-                                themeController.currentTheme),
-                            onPressed: () =>
-                                controller.pickImage(ImageSource.gallery),
+                                themeController.currentTheme,
+                                isEnabled: controller.isEnabled.value),
+                            onPressed: () => controller.isEnabled.value
+                                ? controller.pickImage(ImageSource.gallery)
+                                : null,
                             child: CustomWidgets.textWithIconForFullWidth(
                                 AppIcons.galleryIcon(), "Gallery"),
                           ),
@@ -171,8 +179,10 @@ class ChooseImageScreen extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             style: AppButtonStyles.mainMenuButtonStyle(
-                                themeController.currentTheme),
+                                themeController.currentTheme,
+                                isEnabled: controller.isEnabled.value),
                             onPressed: () {
+                              if (!controller.isEnabled.value) return;
                               controller.selectedImagePath.value.isNotEmpty
                                   ? controller
                                       .runObjectDetectionOnSelectedImage()

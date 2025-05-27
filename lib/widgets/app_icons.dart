@@ -60,8 +60,7 @@ class AppIcons {
     );
   }
 
-  static Widget snackBarIcon(
-      BuildContext context, IconData icon, Color iconColor) {
+  static Widget snackBarIcon(IconData icon, Color iconColor) {
     return Icon(
       icon,
       color: iconColor,

@@ -15,7 +15,7 @@ class CustomWidgets {
     );
   }
 
-  static Widget buildMessageRichText(BuildContext context, String info) {
+  static Widget buildMessageRichText(String info) {
     const rupeeSymbol = '₹';
 
     if (!info.contains(rupeeSymbol)) {
