@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:vision_ai_app/controllers/theme_controller.dart';
 import 'package:vision_ai_app/screens/choose_image_screen.dart';
 import 'package:vision_ai_app/screens/real_time_camera_screen.dart';
+import 'package:vision_ai_app/screens/stream_camera_screen.dart';
 import 'package:vision_ai_app/screens/theme_list_screen.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
 import 'package:vision_ai_app/styles/app_text_styles.dart';
@@ -106,6 +107,17 @@ class MainScreen extends StatelessWidget {
                                     Get.to(const ChooseImageScreen());
                                   },
                                   child: const Text('Detect from Image')),
+                            ),
+                            Gap(16.h),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                  style: AppButtonStyles.mainMenuButtonStyle(
+                                      themeController.currentTheme),
+                                  onPressed: () {
+                                    Get.to(const StreamCameraScreen());
+                                  },
+                                  child: const Text('Stream Live')),
                             ),
                             // ! Comment this while production
                             // Gap(16.h),

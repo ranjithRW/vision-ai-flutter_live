@@ -47,6 +47,7 @@ dependencies:
   tflite_v2: ^1.0.0
   share_plus: ^11.0.0
   path_provider: ^2.1.5
+  ffmpeg_kit_flutter_new: ^1.6.1
 
 dev_dependencies:
   flutter_test:

@@ -28,29 +28,24 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
   var detectedObjects = <RecognizedObject>[].obs;
 
   var selectedImagePath = ''.obs;
-  var imageAspectRatio = (3 / 4).obs; // default vertical ratio
+  var imageAspectRatio = (3 / 4).obs;
   var isLoadingImage = false.obs;
 
   late Interpreter interpreter;
   late List<String> labels;
-
   late CameraController cameraController;
 
-  // static const int inputSize = 300;
-  // static const double threshold = 0.4;
+  static const int inputSize = 300;
+  static const double threshold = 0.4;
 
   DateTime? lastInference;
-  // Initial throttle
-  // final Duration throttleDuration = const Duration(milliseconds: 150);
-
-  // Updated throttle
-  final Duration throttleDuration = const Duration(milliseconds: 300);
+  final Duration throttleDuration = const Duration(milliseconds: 300); // Increased throttle
 
   var isEnabled = true.obs;
 
   // Improved confidence tracking
-  final Map<String, List<double>> confidenceHistory = {};
-  static const int historySize = 5;
+  final Map<String, List<double>> _confidenceHistory = {};
+  static const int _historySize = 5;
 
   @override
   void onInit() async {
@@ -85,23 +80,25 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     try {
       logger.i('Initializing camera...');
       final cameras = await availableCameras();
-      // Camera resolution preset-Medium
-      // cameraController = CameraController(cameras[0], ResolutionPreset.medium,
-      //     enableAudio: false);
-      //$ Camera resolution preset-High
-      cameraController = CameraController(cameras[0], ResolutionPreset.high,
-          enableAudio: false, imageFormatGroup: ImageFormatGroup.yuv420);
+      
+      // Use higher resolution for better quality
+      cameraController = CameraController(
+        cameras[0], 
+        ResolutionPreset.high, // Changed from medium to high
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.yuv420, // Consistent format
+      );
+      
       await cameraController.initialize();
-
-        // Set camera settings for consistency
+      
+      // Set camera settings for consistency
       await cameraController.setFocusMode(FocusMode.auto);
       await cameraController.setExposureMode(ExposureMode.auto);
-
+      
       isCameraInitialized.value = true;
 
       if (isLive) {
         logger.i('Start Streaming images from camera');
-        // Start image stream
         cameraController.startImageStream((CameraImage image) {
           if (!isDetecting.value && isModelLoaded.value) {
             isDetecting.value = true;
@@ -109,11 +106,6 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
               isDetecting.value = false;
             });
           }
-          // ! This makes the interpreter busy
-          // isDetecting.value = true;
-          // runModelOnFrame(image).then((_) {
-          //   isDetecting.value = false;
-          // });
         });
       }
     } catch (e) {
@@ -131,9 +123,8 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     isCameraInitialized.value = false;
   }
 
-  /// Run TFLite model on CameraImage frame - CORRECTED FOR SSD MobileNet
+  /// Improved frame processing with temporal smoothing
   Future<void> runModelOnFrame(CameraImage cameraImage) async {
-    logger.i('Running model on frame');
     if (!isModelLoaded.value) return;
 
     final now = DateTime.now();
@@ -144,30 +135,27 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     lastInference = now;
 
     try {
-      logger.i('Starting detection');
-      logger.i('Running inference');
+      // Improved parameters for better consistency
       var recognitions = await Tflite.detectObjectOnFrame(
-          bytesList: cameraImage.planes.map((plane) {
-            return plane.bytes;
-          }).toList(),
+          bytesList: cameraImage.planes.map((plane) => plane.bytes).toList(),
           model: 'SSDMobileNet',
           imageHeight: cameraImage.height,
           imageWidth: cameraImage.width,
-          imageMean: 127.5, // defaults to 127.5
-          imageStd: 127.5, // defaults to 127.5
-          rotation: 90, // defaults to 90, Android only
-          // ! Initial settings
-          // numResultsPerClass: 5, // defaults to 5
-          // threshold: 0.1, // defaults to 0.1
-          // $ Updated settings
-          numResultsPerClass: 10,
-          threshold: 0.35,
-          asynch: true // defaults to true
-          );
-      logger.i('Inference completed');
-      logger.i('Recognitions: $recognitions');
-      detectedObjects.assignAll(await mapRecognitions(recognitions));
-      logger.i('Detected objects: $detectedObjects');
+          imageMean: 127.5,
+          imageStd: 127.5,
+          rotation: 90,
+          numResultsPerClass: 10, // Increased from 5
+          threshold: 0.3, // Increased from 0.1 for more stable detections
+          asynch: true
+      );
+
+      // Apply temporal smoothing
+      final smoothedObjects = await _applySmoothingFilter(
+        await mapRecognitions(recognitions)
+      );
+      
+      detectedObjects.assignAll(smoothedObjects);
+      
     } catch (e) {
       logger.e('Error during inference: $e');
       GeneralSnackbars.showSnackBarAtTop(
@@ -177,9 +165,65 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     }
   }
 
+  /// Apply temporal smoothing to reduce flickering
+  Future<List<RecognizedObject>> _applySmoothingFilter(
+      List<RecognizedObject> currentObjects) async {
+    
+    List<RecognizedObject> smoothedObjects = [];
+    
+    for (var obj in currentObjects) {
+      String key = '${obj.label}_${obj.rect.center.dx.round()}_${obj.rect.center.dy.round()}';
+      
+      // Maintain confidence history
+      if (!_confidenceHistory.containsKey(key)) {
+        _confidenceHistory[key] = [];
+      }
+      
+      _confidenceHistory[key]!.add(obj.confidence);
+      
+      // Keep only recent history
+      if (_confidenceHistory[key]!.length > _historySize) {
+        _confidenceHistory[key]!.removeAt(0);
+      }
+      
+      // Calculate smoothed confidence
+      double avgConfidence = _confidenceHistory[key]!
+          .reduce((a, b) => a + b) / _confidenceHistory[key]!.length;
+      
+      // Only include if average confidence is above threshold
+      if (avgConfidence >= 0.4) {
+        smoothedObjects.add(RecognizedObject(
+          rect: obj.rect,
+          label: obj.label,
+          confidence: avgConfidence,
+        ));
+      }
+    }
+    
+    // Clean up old entries
+    _cleanupConfidenceHistory();
+    
+    return smoothedObjects;
+  }
+
+  void _cleanupConfidenceHistory() {
+    // Remove entries that haven't been updated recently
+    final keysToRemove = <String>[];
+    _confidenceHistory.forEach((key, values) {
+      if (values.isEmpty) {
+        keysToRemove.add(key);
+      }
+    });
+    
+    for (String key in keysToRemove) {
+      _confidenceHistory.remove(key);
+    }
+  }
+
   Future<void> runObjectDetectionOnSelectedImage() async {
-    logger.i('Running model on frame');
+    logger.i('Running model on selected image');
     isEnabled.value = false;
+    
     if (!isModelLoaded.value) {
       logger.e('Model not loaded');
       GeneralSnackbars.showSnackBarAtTop(
@@ -188,77 +232,122 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
       return;
     }
 
-    final now = DateTime.now();
-    if (lastInference != null &&
-        now.difference(lastInference!) < throttleDuration) {
-      isEnabled.value = true;
-      return;
-    }
-    lastInference = now;
     try {
       isDetecting.value = true;
       logger.i('Running model on selected image: ${selectedImagePath.value}');
+      
+      // Use same threshold as camera for consistency
       var recognitions = await Tflite.detectObjectOnImage(
           path: selectedImagePath.value,
           model: 'SSDMobileNet',
-          imageMean: 127.5, // defaults to 127.5
-          imageStd:
-              127.5, // defaults to 127.5numResultsPerClass: 5, // defaults to 5
-          threshold: 0.1, // defaults to 0.1
-          asynch: true // defaults to true
-          );
+          imageMean: 127.5,
+          imageStd: 127.5,
+          numResultsPerClass: 10, // Increased for consistency
+          threshold: 0.3, // Match camera threshold
+          asynch: true
+      );
+      
       logger.i('Inference completed');
-      logger.i('Recognitions: $recognitions');
       detectedObjects.assignAll(await mapRecognitions(recognitions));
-      logger.i('Detected objects: $detectedObjects');
+      
       if (detectedObjects.isEmpty) {
         GeneralSnackbars.showSnackBarAtTop('No Objects Detected',
             'No objects were detected in the image', 'info');
-        isEnabled.value = true;
-        return;
       } else {
-        isEnabled.value = true;
         await Get.to(ResultImageScreen());
       }
     } catch (e) {
       logger.e('Error during inference: $e');
       GeneralSnackbars.showSnackBarAtTop(
           'Detection Failed', 'Failed to run object detection: $e', 'error');
-      isEnabled.value = true;
     } finally {
       isDetecting.value = false;
       isEnabled.value = true;
     }
   }
 
-  /// Maps the raw recognitions from TFLite to RecognizedObject instances
-  /// Use this as a filter method in future
+  /// Improved recognition mapping with filtering
   Future<List<RecognizedObject>> mapRecognitions(
       List<dynamic>? recognitions) async {
+    
     if (recognitions == null) {
       logger.i('No recognitions found');
       return [];
     }
-    return recognitions.map((recognition) {
-      final map = Map<String, dynamic>.from(recognition as Map); // Safe cast
-
-      final rectData = Map<String, dynamic>.from(map['rect'] as Map);
-
-      final rect = Rect.fromLTWH(
-        rectData['x'] as double,
-        rectData['y'] as double,
-        rectData['w'] as double,
-        rectData['h'] as double,
-      );
-      return RecognizedObject(
-        rect: rect,
-        label: map['detectedClass'] as String,
-        confidence: map['confidenceInClass'] as double,
-      );
-    }).toList();
+    
+    List<RecognizedObject> objects = [];
+    
+    for (var recognition in recognitions) {
+      try {
+        final map = Map<String, dynamic>.from(recognition as Map);
+        final rectData = Map<String, dynamic>.from(map['rect'] as Map);
+        final confidence = map['confidenceInClass'] as double;
+        
+        // Apply minimum confidence filter
+        if (confidence < 0.3) continue;
+        
+        final rect = Rect.fromLTWH(
+          rectData['x'] as double,
+          rectData['y'] as double,
+          rectData['w'] as double,
+          rectData['h'] as double,
+        );
+        
+        // Filter out very small or very large bounding boxes
+        final area = rect.width * rect.height;
+        if (area < 100 || area > 300000) continue;
+        
+        objects.add(RecognizedObject(
+          rect: rect,
+          label: map['detectedClass'] as String,
+          confidence: confidence,
+        ));
+      } catch (e) {
+        logger.w('Error parsing recognition: $e');
+        continue;
+      }
+    }
+    
+    // Sort by confidence
+    objects.sort((a, b) => b.confidence.compareTo(a.confidence));
+    
+    return objects;
   }
 
-//Other methods
+  // Method to capture high-quality frame from camera for detection
+  Future<void> captureAndDetect() async {
+    if (!isCameraInitialized.value || !isModelLoaded.value) return;
+    
+    try {
+      isDetecting.value = true;
+      
+      // Capture high-quality image
+      final XFile imageFile = await cameraController.takePicture();
+      
+      // Run detection on captured image (same as still image processing)
+      var recognitions = await Tflite.detectObjectOnImage(
+          path: imageFile.path,
+          model: 'SSDMobileNet',
+          imageMean: 127.5,
+          imageStd: 127.5,
+          numResultsPerClass: 10,
+          threshold: 0.3,
+          asynch: true
+      );
+      
+      detectedObjects.assignAll(await mapRecognitions(recognitions));
+      
+      // Clean up temporary file
+      await File(imageFile.path).delete();
+      
+    } catch (e) {
+      logger.e('Error during capture and detect: $e');
+    } finally {
+      isDetecting.value = false;
+    }
+  }
+
+  // Rest of your existing methods remain the same...
   Future<void> pickImage(ImageSource source) async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -280,15 +369,11 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
 
   Future<void> _calculateImageAspectRatio(String imagePath) async {
     try {
-      // Read image file as bytes
       final Uint8List imageBytes = await XFile(imagePath).readAsBytes();
-
       final codec = await instantiateImageCodec(imageBytes);
       final frame = await codec.getNextFrame();
       final image = frame.image;
-
       imageAspectRatio.value = image.width / image.height;
-
       image.dispose();
     } catch (e) {
       imageAspectRatio.value = 3 / 4;
@@ -299,6 +384,7 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     selectedImagePath.value = '';
     imageAspectRatio.value = 3 / 4;
     detectedObjects.value = [];
+    _confidenceHistory.clear(); // Clear smoothing history
   }
 
   Future<Size> getImageSizeFromFile(String imagePath) async {
@@ -323,15 +409,14 @@ class ObjectDetectionControllerTFLiteV2 extends GetxController {
     Directory? downloadsDirectory;
 
     if (Platform.isAndroid) {
-      // For Android, get the public Downloads directory
       downloadsDirectory = Directory('/storage/emulated/0/Download');
     } else if (Platform.isIOS ||
         Platform.isMacOS ||
         Platform.isLinux ||
         Platform.isWindows) {
-      // For other platforms, use the provided Downloads directory
       downloadsDirectory = await getDownloadsDirectory();
     }
+    
     final filePath =
         '${downloadsDirectory!.path}/detected_image_${DateTime.now().millisecondsSinceEpoch}.png';
     final file = File(filePath);
