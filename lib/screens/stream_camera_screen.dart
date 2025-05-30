@@ -7,7 +7,6 @@ import 'package:vision_ai_app/screens/main_screen.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
 import 'package:vision_ai_app/styles/app_text_styles.dart';
 import 'package:vision_ai_app/widgets/app_icons.dart';
-import 'package:vision_ai_app/widgets/bounding_box_painter.dart';
 
 class StreamCameraScreen extends StatelessWidget {
   const StreamCameraScreen({super.key});
@@ -101,16 +100,16 @@ class StreamCameraScreen extends StatelessWidget {
                                     children: [
                                       CameraPreview(
                                           controller.cameraController),
-                                      CustomPaint(
-                                        painter: BoundingBoxPainter(
-                                          boxes: controller.detectedObjects
-                                              .toList(),
-                                          imageSize: controller.cameraController
-                                              .value.previewSize!,
-                                          widgetSize:
-                                              MediaQuery.of(context).size,
-                                        ),
-                                      ),
+                                      // CustomPaint(
+                                      //   painter: BoundingBoxPainter(
+                                      //     boxes: controller.detectedObjects
+                                      //         .toList(),
+                                      //     imageSize: controller.cameraController
+                                      //         .value.previewSize!,
+                                      //     widgetSize:
+                                      //         MediaQuery.of(context).size,
+                                      //   ),
+                                      // ),
                                     ],
                                   ),
                                 ),

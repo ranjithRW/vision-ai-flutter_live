@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:vision_ai_app/controllers/theme_controller.dart';
-import 'package:vision_ai_app/screens/choose_image_screen.dart';
-import 'package:vision_ai_app/screens/real_time_camera_screen.dart';
 import 'package:vision_ai_app/screens/stream_camera_screen.dart';
 import 'package:vision_ai_app/screens/theme_list_screen.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
@@ -87,28 +83,28 @@ class MainScreen extends StatelessWidget {
                             AppPaddings.symmetric(horizontal: 12, vertical: 16),
                         child: Column(
                           children: [
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                  style: AppButtonStyles.mainMenuButtonStyle(
-                                      themeController.currentTheme),
-                                  onPressed: () {
-                                    Get.to(const RealTimeCameraScreen());
-                                  },
-                                  child: const Text('Detect Live')),
-                            ),
-                            Gap(16.h),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                  style: AppButtonStyles.mainMenuButtonStyle(
-                                      themeController.currentTheme),
-                                  onPressed: () {
-                                    Get.to(const ChooseImageScreen());
-                                  },
-                                  child: const Text('Detect from Image')),
-                            ),
-                            Gap(16.h),
+                            // SizedBox(
+                            //   width: double.infinity,
+                            //   child: ElevatedButton(
+                            //       style: AppButtonStyles.mainMenuButtonStyle(
+                            //           themeController.currentTheme),
+                            //       onPressed: () {
+                            //         Get.to(const RealTimeCameraScreen());
+                            //       },
+                            //       child: const Text('Detect Live')),
+                            // ),
+                            // Gap(16.h),
+                            // SizedBox(
+                            //   width: double.infinity,
+                            //   child: ElevatedButton(
+                            //       style: AppButtonStyles.mainMenuButtonStyle(
+                            //           themeController.currentTheme),
+                            //       onPressed: () {
+                            //         Get.to(const ChooseImageScreen());
+                            //       },
+                            //       child: const Text('Detect from Image')),
+                            // ),
+                            // Gap(16.h),
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
