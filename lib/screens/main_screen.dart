@@ -23,7 +23,7 @@ class MainScreen extends StatelessWidget {
         elevation: 0,
         title: Obx(() {
           return Text(
-            "Vision AI",
+            "Live Streaming",
             style: AppTextStyles.tertiaryTextStyle70020().copyWith(
               color: themeController.currentTheme.primaryColor,
             ),
@@ -61,7 +61,7 @@ class MainScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        "Spot everything around you using Vision AI",
+                        "Welcome to Live streaming",
                         textAlign: TextAlign.center,
                         style: AppTextStyles.primaryTextStyle70040().copyWith(
                           color: themeController.currentTheme.primaryColor,
@@ -70,7 +70,7 @@ class MainScreen extends StatelessWidget {
                       Padding(
                         padding: AppPaddings.medium,
                         child: Text(
-                            "Scan live or choose a photo to get started!",
+                            "This is a live streaming demo",
                             textAlign: TextAlign.center,
                             style:
                                 AppTextStyles.primaryTextStyle40016().copyWith(

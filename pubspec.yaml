@@ -80,6 +80,7 @@ flutter:
   assets:
     # Images Here
     - assets/images/objex.png
+    - assets/images/live.jpg
     # Models with Labels Here
     #$ SSD MobileNet Model
     - assets/models/ssd_mobilenet.tflite

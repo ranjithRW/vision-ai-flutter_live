@@ -94,7 +94,7 @@ class StreamCameraController extends GetxController {
       // Start server with proper configuration
       httpServer = await shelf_io.serve(
         handler,
-        "172.16.0.149",
+        "192.168.1.8", //ip mobile
         8081,
         poweredByHeader: null,
       );
@@ -349,7 +349,7 @@ class StreamCameraController extends GetxController {
       // Enhanced FFmpeg command for better RTSP streaming
       final command = [
         '-f', 'mjpeg',
-        '-i', 'http://172.16.0.149:8081',
+        '-i', 'http://192.168.1.8:8081',//ip mobile
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-tune', 'zerolatency',
@@ -365,7 +365,7 @@ class StreamCameraController extends GetxController {
         '-bufsize', '3000k',
         '-f', 'rtsp',
         '-rtsp_transport', 'tcp',
-        'rtsp://172.16.1.4:8554/mystream'
+        'rtsp://192.168.1.6:8554/mystream'    //ip laptop
       ].join(' ');
  
       logger.i('Starting FFmpeg with command: $command');
