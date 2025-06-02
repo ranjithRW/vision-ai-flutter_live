@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
-import 'package:tflite_v2/tflite_v2.dart';
 import 'package:vision_ai_app/model_classes/recognized_object.dart';
 import 'package:vision_ai_app/widgets/general_snackbars.dart';
 import 'package:shelf/shelf.dart' as shelf;
@@ -136,7 +135,7 @@ class StreamCameraController extends GetxController {
     _startBackgroundFrameCapture(widgetKey);
 
     frameTimer =
-        Timer.periodic(Duration(milliseconds: frameIntervalMs), (timer) async {
+        Timer.periodic(const Duration(milliseconds: frameIntervalMs), (timer) async {
       if (controller.isClosed || !activeStreams.contains(controller)) {
         timer.cancel();
         return;
@@ -186,7 +185,7 @@ class StreamCameraController extends GetxController {
 
   void _startBackgroundFrameCapture(GlobalKey widgetKey) {
     // Continuous background capture for zero-latency frame delivery
-    Timer.periodic(Duration(milliseconds: frameIntervalMs - 5), (timer) async {
+    Timer.periodic(const Duration(milliseconds: frameIntervalMs - 5), (timer) async {
       if (!isStreaming.value || _isCapturing) {
         if (!isStreaming.value) timer.cancel();
         return;
