@@ -7,6 +7,7 @@ import 'package:vision_ai_app/screens/main_screen.dart';
 import 'package:vision_ai_app/styles/app_paddings.dart';
 import 'package:vision_ai_app/styles/app_text_styles.dart';
 import 'package:vision_ai_app/widgets/app_icons.dart';
+import 'package:vision_ai_app/widgets/bounding_box_painter.dart';
 
 class StreamCameraScreen extends StatelessWidget {
   const StreamCameraScreen({super.key});
@@ -36,7 +37,7 @@ class StreamCameraScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           title: Obx(() {
             return Text(
-              "Live Stream",
+              "Live Streaming",
               style: AppTextStyles.primaryTextStyle70020().copyWith(
                 color: themeController.currentTheme.primaryColor,
               ),
@@ -83,11 +84,11 @@ class StreamCameraScreen extends StatelessWidget {
                 padding: AppPaddings.medium,
                 child: Center(
                   child: controller.isCameraInitialized.value
-                      ? RepaintBoundary(
-                          key: previewContainerKey, // Key for capturing
-                          child: ClipRect(
-                            child: OverflowBox(
-                              alignment: Alignment.center,
+                      ? ClipRect(
+                          child: OverflowBox(
+                            alignment: Alignment.center,
+                            child: RepaintBoundary(
+                              key: previewContainerKey,
                               child: FittedBox(
                                 fit: BoxFit.cover,
                                 child: SizedBox(
@@ -172,3 +173,4 @@ class StreamCameraScreen extends StatelessWidget {
     );
   }
 }
+ 
