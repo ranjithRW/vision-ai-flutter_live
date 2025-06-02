@@ -45,7 +45,8 @@ class StreamCameraController extends GetxController {
   // Optimized frame management
   final List<int> _frameBuffer = <int>[];
   final List<int> _boundaryBytes = utf8.encode('--boundarydonotcross\r\n');
-  final List<int> _contentTypeBytes = utf8.encode('Content-Type: image/jpeg\r\n');
+  final List<int> _contentTypeBytes =
+      utf8.encode('Content-Type: image/jpeg\r\n');
   final List<int> _newlineBytes = utf8.encode('\r\n');
 
   // Dual buffer system for zero-copy streaming
@@ -57,7 +58,7 @@ class StreamCameraController extends GetxController {
   // Frame rate control
   static const int targetFPS = 30;
   static const int frameIntervalMs = 1000 ~/ targetFPS; // ~33ms for 30fps
-  
+
   // Quality control
   static const int jpegQuality = 80; // Reduced for lower latency
   static const double pixelRatio = 0.8; // Slight reduction for performance
@@ -88,7 +89,7 @@ class StreamCameraController extends GetxController {
             logger.i("Client disconnected");
           },
         );
-        
+
         activeStreams.add(controller);
 
         final headers = {
@@ -119,7 +120,7 @@ class StreamCameraController extends GetxController {
 
       // Optimize server settings for streaming
       httpServer!.autoCompress = false;
-      httpServer!.idleTimeout = const Duration(minutes: 10);
+      httpServer!.idleTimeout = const Duration(hours: 24);
 
       logger.i(
           'Ultra-low latency MJPEG server started at http://${httpServer!.address.host}:${httpServer!.port}');
@@ -131,11 +132,11 @@ class StreamCameraController extends GetxController {
 
   void _startUltraLowLatencyFrameGeneration(
       StreamController<List<int>> controller, GlobalKey widgetKey) {
-    
     // Start background frame capture immediately
     _startBackgroundFrameCapture(widgetKey);
 
-    frameTimer = Timer.periodic(Duration(milliseconds: frameIntervalMs), (timer) async {
+    frameTimer =
+        Timer.periodic(Duration(milliseconds: frameIntervalMs), (timer) async {
       if (controller.isClosed || !activeStreams.contains(controller)) {
         timer.cancel();
         return;
@@ -143,12 +144,12 @@ class StreamCameraController extends GetxController {
 
       try {
         Uint8List? bytes;
-        
+
         // Use front buffer if ready, otherwise skip frame to maintain timing
         if (_frontBufferReady && _frontBuffer != null) {
           bytes = _frontBuffer;
           _frontBufferReady = false;
-          
+
           // Swap buffers
           final temp = _frontBuffer;
           _frontBuffer = _backBuffer;
@@ -164,7 +165,8 @@ class StreamCameraController extends GetxController {
         _frameBuffer.clear();
         _frameBuffer.addAll(_boundaryBytes);
         _frameBuffer.addAll(_contentTypeBytes);
-        _frameBuffer.addAll(utf8.encode('Content-Length: ${bytes.length}\r\n\r\n'));
+        _frameBuffer
+            .addAll(utf8.encode('Content-Length: ${bytes.length}\r\n\r\n'));
         _frameBuffer.addAll(bytes);
         _frameBuffer.addAll(_newlineBytes);
 
@@ -331,7 +333,8 @@ class StreamCameraController extends GetxController {
 
       // Use reduced pixel ratio for better performance
       final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.rawRgba);
 
       if (byteData == null) {
         image.dispose();
@@ -354,7 +357,7 @@ class StreamCameraController extends GetxController {
 
       // Fast JPEG encoding with optimized settings
       return Uint8List.fromList(img.encodeJpg(
-        imgPkg, 
+        imgPkg,
         quality: jpegQuality,
         chroma: img.JpegChroma.yuv420, // More efficient chroma subsampling
       ));
@@ -395,9 +398,11 @@ class StreamCameraController extends GetxController {
       );
 
       await cameraController.initialize();
-      await cameraController.setFocusMode(FocusMode.locked); // Avoid focus hunting
-      await cameraController.setExposureMode(ExposureMode.locked); // Stable exposure
-      
+      await cameraController
+          .setFocusMode(FocusMode.locked); // Avoid focus hunting
+      await cameraController
+          .setExposureMode(ExposureMode.locked); // Stable exposure
+
       // Set optimal FPS if supported
       try {
         await cameraController.setExposureOffset(0.0);
