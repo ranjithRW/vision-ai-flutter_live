@@ -118,7 +118,7 @@ class StreamCameraController extends GetxController {
  
     // Timer to capture frames at ~30 fps
     frameTimer =
-        Timer.periodic(const Duration(milliseconds: 33), (timer) async {
+        Timer.periodic(const Duration(milliseconds: 33), (timer) async {   //checkkkk?
       if (controller.isClosed || !activeStreams.contains(controller)) {
         timer.cancel();
         return;
@@ -143,8 +143,7 @@ class StreamCameraController extends GetxController {
         final frame = <int>[];
         frame.addAll(utf8.encode('--boundarydonotcross\r\n'));
         frame.addAll(utf8.encode('Content-Type: image/jpeg\r\n'));
-        frame
-            .addAll(utf8.encode('Content-Length: ${jpegBytes.length}\r\n\r\n'));
+        frame.addAll(utf8.encode('Content-Length: ${jpegBytes.length}\r\n\r\n'));
         frame.addAll(jpegBytes);
         frame.addAll(utf8.encode('\r\n'));
  
@@ -444,39 +443,7 @@ class StreamCameraController extends GetxController {
     }
   }
  
-  // Keep the widget capture method for other purposes if needed
-  Future<Uint8List?> captureWidgetToJPEG(GlobalKey key) async {
-    try {
-      final boundary =
-          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) {
-        logger.w("captureWidgetToJPEG: boundary is null");
-        return null;
-      }
- 
-      final ui.Image image = await boundary.toImage(pixelRatio: 1.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
- 
-      if (byteData == null) {
-        logger.w("captureWidgetToJPEG: byteData is null");
-        image.dispose();
-        return null;
-      }
- 
-      final pngBytes = byteData.buffer.asUint8List();
-      final imgPkg = img.decodeImage(pngBytes);
-      image.dispose();
- 
-      if (imgPkg == null) return null;
- 
-      return Uint8List.fromList(img.encodeJpg(imgPkg, quality: 100));
-    } catch (e) {
-      logger.e('Error capturing JPEG: $e');
-      return null;
-    }
-  }
- 
-  @override
+ @override
   void onClose() async {
     logger.i("StreamCameraController onClose called");
     await stopStreaming();
@@ -574,5 +541,3 @@ class StreamCameraController extends GetxController {
     await startStreaming();
   }
 }
- 
- 
