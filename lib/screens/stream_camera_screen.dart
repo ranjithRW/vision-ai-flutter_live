@@ -36,7 +36,7 @@ class StreamCameraScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           title: Obx(() {
             return Text(
-              "Live Detect",
+              "Live Stream",
               style: AppTextStyles.primaryTextStyle70020().copyWith(
                 color: themeController.currentTheme.primaryColor,
               ),
