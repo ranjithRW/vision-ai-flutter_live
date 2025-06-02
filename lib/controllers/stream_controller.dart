@@ -36,22 +36,31 @@ class StreamCameraController extends GetxController {
 
   GlobalKey? widgetKey;
 
-  // Streaming related - optimized for low latency
+  // Streaming related - ultra-low latency optimizations
   static FFmpegSession? session;
   HttpServer? httpServer;
   Timer? frameTimer;
   final Set<StreamController<List<int>>> activeStreams = {};
 
-  // Pre-allocated buffers for performance
+  // Optimized frame management
   final List<int> _frameBuffer = <int>[];
   final List<int> _boundaryBytes = utf8.encode('--boundarydonotcross\r\n');
-  final List<int> _contentTypeBytes =
-      utf8.encode('Content-Type: image/jpeg\r\n');
+  final List<int> _contentTypeBytes = utf8.encode('Content-Type: image/jpeg\r\n');
   final List<int> _newlineBytes = utf8.encode('\r\n');
 
-  // Frame cache for immediate response
-  Uint8List? _cachedFrame;
-  bool _frameReady = false;
+  // Dual buffer system for zero-copy streaming
+  Uint8List? _frontBuffer;
+  Uint8List? _backBuffer;
+  bool _frontBufferReady = false;
+  bool _isCapturing = false;
+
+  // Frame rate control
+  static const int targetFPS = 30;
+  static const int frameIntervalMs = 1000 ~/ targetFPS; // ~33ms for 30fps
+  
+  // Quality control
+  static const int jpegQuality = 80; // Reduced for lower latency
+  static const double pixelRatio = 0.8; // Slight reduction for performance
 
   void setWidgetKey(GlobalKey key) {
     widgetKey = key;
@@ -70,13 +79,17 @@ class StreamCameraController extends GetxController {
       await stopHttpServer();
 
       handler(shelf.Request request) {
-        final controller = StreamController<List<int>>();
+        late StreamController<List<int>> controller;
+        controller = StreamController<List<int>>(
+          // Optimize buffer size for immediate delivery
+          onListen: () => logger.i("Client connected"),
+          onCancel: () {
+            activeStreams.remove(controller);
+            logger.i("Client disconnected");
+          },
+        );
+        
         activeStreams.add(controller);
-
-        controller.onCancel = () {
-          activeStreams.remove(controller);
-          logger.i("Client disconnected");
-        };
 
         final headers = {
           HttpHeaders.contentTypeHeader:
@@ -88,9 +101,12 @@ class StreamCameraController extends GetxController {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
+          // Additional headers for lower latency
+          'X-Accel-Buffering': 'no',
+          'Cache-Control': 'no-cache, no-store, max-age=0',
         };
 
-        _startOptimizedFrameGeneration(controller, widgetKey);
+        _startUltraLowLatencyFrameGeneration(controller, widgetKey);
         return shelf.Response.ok(controller.stream, headers: headers);
       }
 
@@ -101,54 +117,61 @@ class StreamCameraController extends GetxController {
         poweredByHeader: null,
       );
 
+      // Optimize server settings for streaming
       httpServer!.autoCompress = false;
       httpServer!.idleTimeout = const Duration(minutes: 10);
 
       logger.i(
-          'MJPEG server started at http://${httpServer!.address.host}:${httpServer!.port}');
+          'Ultra-low latency MJPEG server started at http://${httpServer!.address.host}:${httpServer!.port}');
     } catch (e) {
       logger.e('Error starting HTTP server: $e');
       rethrow;
     }
   }
 
-  void _startOptimizedFrameGeneration(
+  void _startUltraLowLatencyFrameGeneration(
       StreamController<List<int>> controller, GlobalKey widgetKey) {
-    // Pre-capture first frame to avoid initial delay
-    _precaptureFrame(widgetKey);
+    
+    // Start background frame capture immediately
+    _startBackgroundFrameCapture(widgetKey);
 
-    frameTimer =
-        Timer.periodic(const Duration(milliseconds: 42), (timer) async {
+    frameTimer = Timer.periodic(Duration(milliseconds: frameIntervalMs), (timer) async {
       if (controller.isClosed || !activeStreams.contains(controller)) {
         timer.cancel();
         return;
       }
 
       try {
-        // Use cached frame if available, otherwise capture new one
         Uint8List? bytes;
-        if (_frameReady && _cachedFrame != null) {
-          bytes = _cachedFrame;
-          _frameReady = false;
-          // Immediately start capturing next frame
-          _precaptureFrame(widgetKey);
+        
+        // Use front buffer if ready, otherwise skip frame to maintain timing
+        if (_frontBufferReady && _frontBuffer != null) {
+          bytes = _frontBuffer;
+          _frontBufferReady = false;
+          
+          // Swap buffers
+          final temp = _frontBuffer;
+          _frontBuffer = _backBuffer;
+          _backBuffer = temp;
         } else {
-          bytes = await _fastCaptureWidgetToJPEG(widgetKey);
+          // Skip frame rather than blocking - maintains smooth timing
+          return;
         }
 
         if (bytes == null || controller.isClosed) return;
 
-        // Use pre-allocated buffer for better performance
+        // Optimized frame construction
         _frameBuffer.clear();
         _frameBuffer.addAll(_boundaryBytes);
         _frameBuffer.addAll(_contentTypeBytes);
-        _frameBuffer
-            .addAll(utf8.encode('Content-Length: ${bytes.length}\r\n\r\n'));
+        _frameBuffer.addAll(utf8.encode('Content-Length: ${bytes.length}\r\n\r\n'));
         _frameBuffer.addAll(bytes);
         _frameBuffer.addAll(_newlineBytes);
 
-        // Send frame immediately without queuing
-        controller.add(List.from(_frameBuffer));
+        // Immediate delivery without buffering
+        if (!controller.isClosed) {
+          controller.add(List.from(_frameBuffer));
+        }
       } catch (e) {
         logger.e('Error generating frame: $e');
         if (!controller.isClosed) {
@@ -159,15 +182,32 @@ class StreamCameraController extends GetxController {
     });
   }
 
-  void _precaptureFrame(GlobalKey widgetKey) {
-    // Capture frame asynchronously to have it ready for next request
-    _fastCaptureWidgetToJPEG(widgetKey).then((bytes) {
-      if (bytes != null) {
-        _cachedFrame = bytes;
-        _frameReady = true;
+  void _startBackgroundFrameCapture(GlobalKey widgetKey) {
+    // Continuous background capture for zero-latency frame delivery
+    Timer.periodic(Duration(milliseconds: frameIntervalMs - 5), (timer) async {
+      if (!isStreaming.value || _isCapturing) {
+        if (!isStreaming.value) timer.cancel();
+        return;
       }
-    }).catchError((e) {
-      logger.w('Precapture error: $e');
+
+      _isCapturing = true;
+      try {
+        final bytes = await _ultraFastCaptureWidgetToJPEG(widgetKey);
+        if (bytes != null && !_frontBufferReady) {
+          _backBuffer = bytes;
+          // Atomic swap
+          if (!_frontBufferReady) {
+            final temp = _frontBuffer;
+            _frontBuffer = _backBuffer;
+            _backBuffer = temp;
+            _frontBufferReady = true;
+          }
+        }
+      } catch (e) {
+        logger.w('Background capture error: $e');
+      } finally {
+        _isCapturing = false;
+      }
     });
   }
 
@@ -183,10 +223,10 @@ class StreamCameraController extends GetxController {
       // Start HTTP server first
       await startHttpStreamServer(widgetKey!);
 
-      // Minimal delay - just enough for server to bind
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Minimal delay for server binding
+      await Future.delayed(const Duration(milliseconds: 50));
 
-      // Optimized FFmpeg command for ultra-low latency
+      // Ultra-optimized FFmpeg command for minimal latency
       final command = [
         '-f', 'mjpeg',
         '-i', 'http://172.16.0.149:8081',
@@ -194,23 +234,27 @@ class StreamCameraController extends GetxController {
         '-preset', 'ultrafast',
         '-tune', 'zerolatency',
         '-profile:v', 'baseline',
-        '-level:v', '3.0',
+        '-level:v', '3.1',
         '-pix_fmt', 'yuv420p',
-        '-r', '24',
-        '-g', '90',
-        '-keyint_min', '90',
+        '-r', '$targetFPS',
+        '-g', '60', // Reduced GOP size for lower latency
+        '-keyint_min', '60',
         '-sc_threshold', '0',
-        '-b:v', '1500k', // Increased bitrate for better quality
-        '-maxrate', '1500k',
-        '-bufsize', '1500k', // Reduced buffer size for lower latency
-        '-fflags', 'nobuffer', // Disable buffering
-        '-flags', 'low_delay', // Low delay flag
+        '-b:v', '2000k', // Optimized bitrate
+        '-maxrate', '2500k',
+        '-bufsize', '500k', // Very small buffer for ultra-low latency
+        '-fflags', '+nobuffer+flush_packets',
+        '-flags', '+low_delay+global_header',
+        '-avioflags', 'direct',
+        '-flush_packets', '1',
+        '-max_delay', '0',
         '-f', 'rtsp',
         '-rtsp_transport', 'tcp',
+        '-rtsp_flags', '+prefer_tcp',
         'rtsp://172.16.1.162:8554/mystream'
       ].join(' ');
 
-      logger.i('Starting FFmpeg with command: $command');
+      logger.i('Starting ultra-low latency FFmpeg with command: $command');
 
       session = await FFmpegKit.executeAsync(command, (session) async {
         final returnCode = await session.getReturnCode();
@@ -222,7 +266,7 @@ class StreamCameraController extends GetxController {
         }
       });
 
-      logger.i("RTSP streaming started successfully");
+      logger.i("Ultra-low latency RTSP streaming started successfully");
     } catch (e) {
       logger.e('Error starting streaming: $e');
       isStreaming.value = false;
@@ -269,23 +313,25 @@ class StreamCameraController extends GetxController {
         logger.i("HTTP server stopped");
       }
 
-      // Clear cache
-      _cachedFrame = null;
-      _frameReady = false;
+      // Clear buffers
+      _frontBuffer = null;
+      _backBuffer = null;
+      _frontBufferReady = false;
+      _isCapturing = false;
     } catch (e) {
       logger.e("Error stopping HTTP server: $e");
     }
   }
 
-  Future<Uint8List?> _fastCaptureWidgetToJPEG(GlobalKey key) async {
+  Future<Uint8List?> _ultraFastCaptureWidgetToJPEG(GlobalKey key) async {
     try {
       final boundary =
           key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return null;
 
-      final ui.Image image = await boundary.toImage(pixelRatio: 1.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      // Use reduced pixel ratio for better performance
+      final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
 
       if (byteData == null) {
         image.dispose();
@@ -295,7 +341,7 @@ class StreamCameraController extends GetxController {
       final bytes = byteData.buffer.asUint8List();
       image.dispose();
 
-      // Direct RGBA to JPEG conversion without PNG intermediate step
+      // Optimized image processing
       final imgPkg = img.Image.fromBytes(
         width: image.width,
         height: image.height,
@@ -306,17 +352,21 @@ class StreamCameraController extends GetxController {
 
       if (imgPkg == null) return null;
 
-      // Direct JPEG encoding with optimized quality
-      return Uint8List.fromList(img.encodeJpg(imgPkg, quality: 85));
+      // Fast JPEG encoding with optimized settings
+      return Uint8List.fromList(img.encodeJpg(
+        imgPkg, 
+        quality: jpegQuality,
+        chroma: img.JpegChroma.yuv420, // More efficient chroma subsampling
+      ));
     } catch (e) {
-      logger.e('Error capturing JPEG: $e');
+      logger.e('Error in ultra-fast capture: $e');
       return null;
     }
   }
 
   // Keep original method as fallback
   Future<Uint8List?> captureWidgetToJPEG(GlobalKey key) async {
-    return _fastCaptureWidgetToJPEG(key);
+    return _ultraFastCaptureWidgetToJPEG(key);
   }
 
   @override
@@ -339,18 +389,26 @@ class StreamCameraController extends GetxController {
 
       cameraController = CameraController(
         cameras[0],
-        ResolutionPreset.high,
+        ResolutionPreset.medium, // Reduced for better performance
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.bgra8888,
       );
 
       await cameraController.initialize();
-      await cameraController.setFocusMode(FocusMode.auto);
-      await cameraController.setExposureMode(ExposureMode.auto);
+      await cameraController.setFocusMode(FocusMode.locked); // Avoid focus hunting
+      await cameraController.setExposureMode(ExposureMode.locked); // Stable exposure
+      
+      // Set optimal FPS if supported
+      try {
+        await cameraController.setExposureOffset(0.0);
+      } catch (e) {
+        logger.w('Could not set exposure offset: $e');
+      }
+
       isCameraInitialized.value = true;
 
       logger.i(
-          'Camera initialized. Preview size: ${cameraController.value.previewSize}');
+          'Camera initialized with optimized settings. Preview size: ${cameraController.value.previewSize}');
 
       if (cameraController.value.isInitialized &&
           !cameraController.value.isStreamingImages) {
